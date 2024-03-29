@@ -1,0 +1,349 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@{
+  ViewData["Title"] = "Главная";
+}
+
+<h1>Список путёвок</h1>
+
+<div class="text-right">
+  @if (User.IsInRole("Manager"))
+  {
+    <button type="button" class="btn btn-primary m-5" onclick="toggleDataModal('create')">
+      <i class="fa fa-plus"></i> Создать
+    </button>
+  }
+</div>
+
+<div class="text-center">
+
+  <div class="modal fade" id="deleteTourModal" tabindex="-1" role="dialog" aria-labelledby="deleteModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Подтверждение</h5>
+          <button type="button" class="close btn btn-outline-dark btn-sm" data-dismiss="modal" aria-label="Close" onclick="toggleDeleteModal()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Удалить путевку?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="toggleDeleteModal()">Закрыть</button>
+          <button type="button" class="btn btn-danger" onclick="deleteTour()">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="TourDataModal" tabindex="-1" role="dialog" aria-labelledby="createModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dataModalTitle"></h5>
+          <button type="button" class="close btn btn-outline-dark btn-sm" data-dismiss="modal" aria-label="Close" onclick="toggleDataModal('create')">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form style="text-align: left" method="post" action="/Home/CreateTour" id="dataModalForm">
+
+            <input type="hidden" id="tourId" name="id" />
+
+            <div class="form-group m-2">
+              <label for="tourName">Страна прибытия</label>
+              <input type="text" class="form-control" id="tourName" name="name" placeholder="Название путёвки" required>
+            </div>
+            <div class="form-group m-2">
+              <label for="startDate">Дата начала</label>
+              <input type="date" class="form-control" id="startDate" name="startDate" placeholder="Дата начала поездки">
+            </div>
+            <div class="form-group m-2">
+              <label for="endDate">Дата конца</label>
+              <input type="date" class="form-control" id="endDate" name="endDate" placeholder="Дата конца поездки">
+            </div>
+
+            <div class="form-group m-2">
+              <label for="price">Стоимость</label>
+              <input type="number" class="form-control" id="price" name="price" placeholder="Стоимость">
+            </div>
+
+            <div class="form-group m-2">
+              <label for="leftover">Осталось в наличии</label>
+              <input type="number" class="form-control" id="leftover" name="leftover" placeholder="Осталось в наличии">
+            </div>
+
+            <button type="submit" class="btn btn-success m-2">Сохранить</button>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="toggleDataModal()">Отменить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="orderTourModal" tabindex="-1" role="dialog" aria-labelledby="orderModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Подтверждение планирования</h5>
+          <button type="button" class="close btn btn-outline-dark btn-sm" data-dismiss="modal" aria-label="Close" onclick="toggleOrderModal()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+
+          <h4>Вы действительно хотите сохранить эту путёвку в свой план отдыха?</h4>
+
+          <form style="text-align: left" method="post" action="/Home/OrderTour?ordered=true" id="orderModalForm">
+
+            <input type="hidden" id="orderTourId" name="tourId" />
+            <input type="hidden" id="orderUserEmail" name="email" />
+
+            <div class="form-group m-2">
+              <label for="orderTourName">Страна прибытия</label>
+              <input type="text" class="form-control" id="orderTourName" placeholder="Название путёвки" readonly>
+            </div>
+            <div class="form-group m-2">
+              <label for="orderStartDate">Дата начала</label>
+              <input type="date" class="form-control" id="orderStartDate" placeholder="Дата начала поездки" readonly>
+            </div>
+            <div class="form-group m-2">
+              <label for="orderEndDate">Дата конца</label>
+              <input type="date" class="form-control" id="orderEndDate" placeholder="Дата конца поездки" readonly>
+            </div>
+
+            <div class="form-group m-2">
+              <label for="orderPrice">Стоимость</label>
+              <input type="number" class="form-control" id="orderPrice" placeholder="Стоимость" readonly>
+            </div>
+
+            <div class="form-group m-2">
+              <label for="orderAmount">Количество людей, отправляющихся в путёвку</label>
+              <input type="number" class="form-control" id="orderAmount" name="amount" />
+            </div>
+
+            <button type="submit" class="btn btn-success m-2">Забронировать</button>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="toggleOrderModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (ViewBag.IsOrdered)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="orderedNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeOrderedToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        Путевка запланирована. Не забудьте забронировать
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+          $("#orderedNotification").toast('show');
+      });
+    </script>
+  }
+
+  @if (ViewBag.IsOverflow)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="overflowNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeOrderedToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        В наличии недостаточно путёвок
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+          $("#overflowNotification").toast('show');
+      });
+    </script>
+  }
+
+  @if (ViewBag.ToursList.Count > 0)
+  {
+    <table class="table">
+      <thead>
+      <td>Страна прибытия</td>
+      <td>Дата начала</td>
+      <td>Дата конца</td>
+      <td>Цена</td>
+      <td>Осталось путёвок</td>
+        @if (SignInManager.IsSignedIn(User))
+        {
+        <td>Действия</td>
+        }
+      </thead>
+
+      @foreach (TourEnriched tour in ViewBag.ToursList)
+      {
+        @if (tour.StartDate > DateOnly.FromDateTime(DateTime.Today) && !tour.Deleted)
+        {
+          @if ((User.IsInRole("Manager") && tour.Leftover <= 0) || tour.Leftover > 0)
+          {
+            <tr class="p-3">
+              <td>@tour.Name</td>
+              <td>@tour.StartDate</td>
+              <td>@tour.EndDate</td>
+              <td>
+                @if (tour.IsHot)
+                {
+                  <del>@tour.OriginalPrice</del> @tour.Price
+                }
+                else
+                {
+                  @tour.Price
+                } &#8381;
+              </td>
+              <td>@tour.Leftover шт.</td>
+
+              <td>
+                @if (SignInManager.IsSignedIn(User))
+                {
+                  if (User.IsInRole("Manager"))
+                  {
+                    <div class="btn-group">
+                      <button class="btn btn-primary" onclick="toggleDataModal('edit', @tour.Id)" title="Редактировать">
+                        <i class="fa-solid fa-pencil"></i>
+                      </button>
+                      <button class="btn btn-danger" onclick="toggleDeleteModal(@tour.Id)" title="Удалить">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  }
+                  @if (tour.Leftover > 0)
+                  {
+                    <button class="btn btn-success" onclick="toggleOrderModal(@tour.Id)" title="Забронировать">
+                      <i class="fa-solid fa-cash-register"></i>
+                    </button>
+                  }
+                }
+              </td>
+            </tr>
+          }
+        }
+      }
+
+    </table>
+  }
+  else
+  {
+    <p>Записей нет</p>
+  }
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+
+  let selectedEntry = 0;
+
+  const toggleDeleteModal = (id) => {
+      selectedEntry = id;
+      $('#deleteTourModal').modal('toggle');
+  }
+
+  const deleteTour = () => {
+      $('#deleteTourModal').modal('toggle');
+      window.location.href = "/Home/DeleteTour/" + selectedEntry;
+  }
+
+  const closeOrderedToast = () => {
+      $("#orderedNotification").toast('close');
+  }
+
+  const toggleDataModal = (action, id) => {
+      const modal = $('#TourDataModal')
+      switch (action) {
+          case "create":
+              modal.attr("data-title", "Создать путёвку");
+              modal.attr("data-tour-name", "");
+              modal.attr("data-tour-startDate", "");
+              modal.attr("data-tour-endDate", "");
+              modal.attr("data-tour-price", "");
+              modal.attr("data-tour-leftover", "");
+              modal.attr("data-tour-action", "/Home/CreateTour");
+              break;
+          case "edit":
+              modal.attr("data-title", "Редактировать путёвку");
+              axios.get(`/Data/Tour/${id}`).then(response => {
+                  modal.attr("data-tour-id", response.data.id);
+                  modal.attr("data-tour-name", response.data.name);
+                  modal.attr("data-tour-startDate", response.data.startDate);
+                  modal.attr("data-tour-endDate", response.data.endDate);
+                  modal.attr("data-tour-price", response.data.price);
+                  modal.attr("data-tour-leftover", response.data.leftover);
+                  modal.attr("data-tour-action", "/Home/EditTour");
+
+              }).catch(error => {
+                  alert(error)
+              })
+              break;
+          case undefined:
+              break;
+      }
+      modal.modal('toggle');
+  }
+
+  const toggleOrderModal = (id) => {
+      const modal = $("#orderTourModal");
+
+      if (id) {
+          modal.attr("data-tour-id", id);
+
+          axios.get(`/Data/Tour/${id}`).then(response => {
+              modal.attr("data-tour-id", response.data.id);
+              modal.attr("data-tour-name", response.data.name);
+              modal.attr("data-tour-startDate", response.data.startDate);
+              modal.attr("data-tour-endDate", response.data.endDate);
+              modal.attr("data-tour-price", response.data.price);
+              modal.attr("data-tour-leftover", response.data.leftover);
+
+          }).catch(error => {
+              alert(error)
+          })
+
+      }
+
+      modal.modal('toggle');
+  }
+
+  $('#TourDataModal').on('shown.bs.modal', (e) => {
+      const modal = $('#TourDataModal')
+      $("#dataModalTitle").text(modal.attr("data-title"));
+      $("#dataModalForm").attr("action", modal.attr("data-tour-action"));
+      $("#tourId").attr("value", modal.attr("data-tour-id"));
+      $("#tourName").attr("value", modal.attr("data-tour-name"));
+      $("#startDate").attr("value", modal.attr("data-tour-startDate"));
+      $("#endDate").attr("value", modal.attr("data-tour-endDate"));
+      $("#price").attr("value", modal.attr("data-tour-price"));
+      $("#leftover").attr("value", modal.attr("data-tour-leftover"));
+  })
+
+  $('#orderTourModal').on('shown.bs.modal', (e) => {
+      const modal = $('#orderTourModal')
+      $("#orderTourId").attr("value", modal.attr("data-tour-id"));
+      $("#orderUserEmail").attr("value", "@User.Identity?.Name");
+      $("#orderTourName").attr("value", modal.attr("data-tour-name"));
+      $("#orderStartDate").attr("value", modal.attr("data-tour-startDate"));
+      $("#orderEndDate").attr("value", modal.attr("data-tour-endDate"));
+      $("#orderPrice").attr("value", modal.attr("data-tour-price"));
+  })
+</script>

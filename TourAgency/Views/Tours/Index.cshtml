@@ -1,0 +1,254 @@
+@{
+  ViewBag.Title = "План поездки";
+  Layout = "_Layout";
+}
+
+<div class="modal fade" id="payModalForm" tabindex="-1" role="dialog" aria-labelledby="orderModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Оплата брони</h5>
+        <button type="button" class="close btn btn-outline-dark btn-sm" data-dismiss="modal" aria-label="Close" onclick="togglePayModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <form style="text-align: left" method="post" action="/Tours/PayForBooking" id="payForm">
+
+          <input type="hidden" id="payBookingId" name="bookingId"/>
+
+          <div class="form-group m-2">
+            <label for="payCardNumber">Номер карты</label>
+            <input type="number" class="form-control" id="payCardNumber" name="cardNumber" placeholder="Номер карты">
+          </div>
+          <div class="form-group m-2">
+            <label for="validDate">Действительна до</label>
+            <div id="validDate" style="display: flex">
+              <input type="number" class="form-control" id="payValidMonth" name="validThroughMonth" placeholder="ММ" style="width: 70px">
+              <span>&nbsp;/&nbsp;</span>
+              <input type="number" class="form-control" id="payValidYear" name="validThroughYear" placeholder="ГГ" style="width: 70px">
+            </div>
+          </div>
+          <div class="form-group m-2">
+            <label for="cvc">CVC-код</label>
+            <input type="number" class="form-control" id="cvc" name="cvc" placeholder="CVC">
+          </div>
+
+          <button type="submit" class="btn btn-success m-2">Оплатить</button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="togglePayModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="cancelModalForm" tabindex="-1" role="dialog" aria-labelledby="orderModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Отмена брони</h5>
+        <button type="button" class="close btn btn-outline-dark btn-sm" data-dismiss="modal" aria-label="Close" onclick="togglePayModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <form style="text-align: left" method="post" action="/Tours/CancelBooking" id="payForm">
+
+          <input type="hidden" id="cancelBookingId" name="bookingId"/>
+
+          <div class="form-group m-2">
+            <label for="payCardNumber">Номер карты</label>
+            <input type="number" class="form-control" id="cancelCardNumber" name="cardNumber" placeholder="Номер карты">
+          </div>
+
+          <button type="submit" class="btn btn-success m-2">Вернуть деньги</button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="togglePayModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  @if (ViewBag.Successful)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="payedNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeSuccessToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        Успешно оплачено
+      </div>
+    </div>
+    
+    <script>
+      $(document).ready(function() {
+          $("#payedNotification").toast('show');
+      });
+    </script>
+  }
+
+  @if (ViewBag.InsfficientFunds)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="notEnougnMoneyNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeNoMoneyToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        Недостаточно средств
+      </div>
+    </div>
+    
+    <script>
+      $(document).ready(function() {
+          $("#notEnougnMoneyNotification").toast('show');
+      });
+    </script>
+  }
+
+  @if (ViewBag.NoSuchCard)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="noSuchCardNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeNoCardToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        Неверно указана карта
+      </div>
+    </div>
+    
+    <script>
+      $(document).ready(function() {
+          $("#noSuchCardNotification").toast('show');
+      });
+    </script>
+  }
+
+  @if (ViewBag.InvalidData)
+  {
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="invalidDataNotification" style="position: absolute; z-index: 2; bottom: 30px; right: 20px">
+      <div class="toast-header d-flex justify-content-between">
+        <strong class="mr-auto">Уведомление</strong>
+        <button type="button" class="btn ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="closeInvalidToast()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">
+        Неверные данные карты
+      </div>
+    </div>
+    
+    <script>
+      $(document).ready(function() {
+          $("#invalidDataNotification").toast('show');
+      });
+    </script>
+  }
+
+<h1>План поездки</h1>
+
+
+<table class="table">
+  <thead>
+  <td>Страна прибытия</td>
+  <td>Даты</td>
+  <td>Количество</td>
+  <td>Статус</td>
+  <td>Действия</td>
+  </thead>
+  @foreach (Booking booking in ViewBag.BookingsList)
+  {
+    @if (booking.Tour.StartDate > DateOnly.FromDateTime(DateTime.Today))
+    {
+      <tr class="p-3">
+        <td>@booking.Tour.Name</td>
+        <td>@booking.Tour.StartDate - @booking.Tour.EndDate</td>
+        <td>@booking.Amount</td>
+        <td>@booking.Status.Name</td>
+        <td>
+          <div class="d-flex justify-content-evenly">
+            @if (booking.Status.Name == "В плане")
+            {
+              <button class="btn btn-primary" title="Оплатить бронь" type="submit" onclick="togglePayModal(@booking.Id)">
+                <i class="fa-solid fa-cart-shopping"></i>
+              </button>
+              <form action="/Tours/CancelBooking" method="post">
+                <input type="hidden" name="bookingId" value="@booking.Id"/>
+                <button class="btn btn-danger" title="Отменить бронь" type="submit">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </form>
+            }
+            @if (booking.Status.Name == "Забронировано")
+            {
+              <button class="btn btn-danger" title="Отменить бронь" onclick="toggleCancelModal(@booking.Id)">
+                <i class="fa-solid fa-times"></i>
+              </button>
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  }
+</table>
+
+<script>
+    const togglePayModal = (id) => {
+      const modal = $("#payModalForm");
+      
+      if (id) {
+        modal.attr("data-tour-id", id);
+      }
+      
+      modal.modal('toggle');
+    }
+    const toggleCancelModal = (id) => {
+      const modal = $("#cancelModalForm");
+      
+      if (id) {
+        modal.attr("data-tour-id", id);
+      }
+      
+      modal.modal('toggle');
+    }
+    
+    $('#payModalForm').on('shown.bs.modal', (e) => {
+        const modal = $('#payModalForm')
+        $("#payBookingId").attr("value", modal.attr("data-tour-id"));
+    })
+    
+    $('#cancelModalForm').on('shown.bs.modal', (e) => {
+        const modal = $('#cancelModalForm')
+        $("#cancelBookingId").attr("value", modal.attr("data-tour-id"));
+    })
+    
+    const closeSuccessToast = () => {
+          $("#payedNotification").toast('close');  
+        }
+        
+    const closeNoMoneyToast = () => {
+          $("#notEnougnMoneyNotification").toast('close');  
+        }
+        
+    const closeNoCardToast = () => {
+          $("#noSuchCardNotification").toast('close');  
+        }
+        
+    const closeInvalidToast = () => {
+          $("#invalidDataNotification").toast('close');  
+        }
+</script>
